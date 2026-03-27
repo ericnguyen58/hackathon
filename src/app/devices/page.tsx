@@ -53,17 +53,17 @@ export default function DevicesPage() {
 
   function handleToggle(id: string, isOn: boolean) {
     setDevices((prev) => prev.map((d) => (d.id === id ? { ...d, isOn } : d)));
-    startTransition(async () => { await toggleDevice(id, isOn); });
+    startTransition(async () => { await toggleDevice(id, isOn).catch(() => {}); });
   }
 
   function handleUpdateHours(id: string, dailyHours: number) {
     setDevices((prev) => prev.map((d) => (d.id === id ? { ...d, dailyHours } : d)));
-    startTransition(async () => { await updateDeviceHours(id, dailyHours); });
+    startTransition(async () => { await updateDeviceHours(id, dailyHours).catch(() => {}); });
   }
 
   function handleDelete(id: string) {
     setDevices((prev) => prev.filter((d) => d.id !== id));
-    startTransition(async () => { await deleteDevice(id); });
+    startTransition(async () => { await deleteDevice(id).catch(() => {}); });
   }
 
   async function handleAddDevice() {
@@ -73,8 +73,8 @@ export default function DevicesPage() {
       category: form.category,
       wattage: parseFloat(form.wattage),
       dailyHours: parseFloat(form.dailyHours) || 0,
-    });
-    setDevices((prev) => [...prev, newDevice]);
+    }).catch(() => null);
+    if (newDevice) setDevices((prev) => [...prev, newDevice]);
     setForm({ name: "", category: "OTHER", wattage: "", dailyHours: "" });
     setShowForm(false);
   }
