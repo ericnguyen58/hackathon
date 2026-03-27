@@ -92,6 +92,8 @@ export default function RewardsPage() {
               <a href="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-primary">Dashboard</a>
               <a href="/limits" className="text-sm font-medium text-muted-foreground hover:text-primary">Limits</a>
               <a href="/rewards" className="text-sm font-medium text-primary">Rewards</a>
+              <a href="/devices" className="text-sm font-medium text-muted-foreground hover:text-primary">Devices</a>
+              <a href="/insights" className="text-sm font-medium text-muted-foreground hover:text-primary">Insights</a>
             </nav>
           </div>
         </div>

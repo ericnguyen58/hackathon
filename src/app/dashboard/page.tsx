@@ -38,24 +38,11 @@ export default async function DashboardPage() {
               </p>
             </div>
             <nav className="flex items-center gap-4">
-              <a
-                href="/dashboard"
-                className="text-sm font-medium text-primary"
-              >
-                Dashboard
-              </a>
-              <a
-                href="/limits"
-                className="text-sm font-medium text-muted-foreground hover:text-primary"
-              >
-                Limits
-              </a>
-              <a
-                href="/rewards"
-                className="text-sm font-medium text-muted-foreground hover:text-primary"
-              >
-                Rewards
-              </a>
+              <a href="/dashboard" className="text-sm font-medium text-primary">Dashboard</a>
+              <a href="/limits" className="text-sm font-medium text-muted-foreground hover:text-primary">Limits</a>
+              <a href="/rewards" className="text-sm font-medium text-muted-foreground hover:text-primary">Rewards</a>
+              <a href="/devices" className="text-sm font-medium text-muted-foreground hover:text-primary">Devices</a>
+              <a href="/insights" className="text-sm font-medium text-muted-foreground hover:text-primary">Insights</a>
             </nav>
           </div>
         </div>

@@ -52,6 +52,7 @@ model Building {
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   readings      EnergyReading[]
+  devices       Device[]
 
   @@index([userId])
   @@map("buildings")
@@ -153,6 +154,33 @@ enum AchievementCategory {
   CONSERVATION
   MILESTONE
   SPECIAL
+}
+
+enum DeviceCategory {
+  HVAC
+  LIGHTING
+  APPLIANCE
+  ELECTRONICS
+  EV_CHARGER
+  OTHER
+}
+
+// Smart home devices for remote control
+model Device {
+  id          String         @id @default(cuid())
+  name        String
+  category    DeviceCategory @default(OTHER)
+  wattage     Float
+  isOn        Boolean        @default(false)
+  dailyHours  Float          @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  buildingId  String
+  building    Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+
+  @@index([buildingId])
+  @@map("devices")
 }
 
 // User's earned achievements
