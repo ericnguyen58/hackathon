@@ -79,6 +79,7 @@ async function main() {
     where: { email: "demo@example.com" },
     update: {},
     create: {
+      id: "user_1",
       email: "demo@example.com",
       name: "Demo User",
       password: "$2a$10$YourHashedPasswordHere", // bcrypt hash of "password"
