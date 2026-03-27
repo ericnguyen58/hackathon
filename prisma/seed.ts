@@ -1,17 +1,17 @@
 import "dotenv/config";
 import { PrismaClient, UserRole, AchievementCategory, AlertType, AlertSeverity } from "@prisma/client";
 
-const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
-});
+const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
 
   // Create achievements
   const achievements = await Promise.all([
-    prisma.achievement.create({
-      data: {
+    prisma.achievement.upsert({
+      where: { name: "First Step" },
+      update: {},
+      create: {
         name: "First Step",
         description: "Log your first energy reading",
         icon: "footprints",
@@ -20,8 +20,10 @@ async function main() {
         requirement: JSON.stringify({ type: "first_reading" }),
       },
     }),
-    prisma.achievement.create({
-      data: {
+    prisma.achievement.upsert({
+      where: { name: "Week Warrior" },
+      update: {},
+      create: {
         name: "Week Warrior",
         description: "Stay under budget for 7 consecutive days",
         icon: "calendar-check",
@@ -30,8 +32,10 @@ async function main() {
         requirement: JSON.stringify({ type: "streak_days", days: 7 }),
       },
     }),
-    prisma.achievement.create({
-      data: {
+    prisma.achievement.upsert({
+      where: { name: "Month Master" },
+      update: {},
+      create: {
         name: "Month Master",
         description: "Stay under budget for a full month",
         icon: "trophy",
@@ -40,8 +44,10 @@ async function main() {
         requirement: JSON.stringify({ type: "under_budget_month" }),
       },
     }),
-    prisma.achievement.create({
-      data: {
+    prisma.achievement.upsert({
+      where: { name: "Eco Warrior" },
+      update: {},
+      create: {
         name: "Eco Warrior",
         description: "Reduce usage by 20% from last month",
         icon: "leaf",
@@ -50,8 +56,10 @@ async function main() {
         requirement: JSON.stringify({ type: "reduction_percentage", percent: 20 }),
       },
     }),
-    prisma.achievement.create({
-      data: {
+    prisma.achievement.upsert({
+      where: { name: "Limit Setter" },
+      update: {},
+      create: {
         name: "Limit Setter",
         description: "Set your first monthly limit",
         icon: "target",
@@ -65,8 +73,10 @@ async function main() {
   console.log(`Created ${achievements.length} achievements`);
 
   // Create a demo user
-  const user = await prisma.user.create({
-    data: {
+  const user = await prisma.user.upsert({
+    where: { email: "demo@example.com" },
+    update: {},
+    create: {
       email: "demo@example.com",
       name: "Demo User",
       password: "$2a$10$YourHashedPasswordHere", // bcrypt hash of "password"
@@ -79,8 +89,11 @@ async function main() {
   console.log(`Created user: ${user.email}`);
 
   // Create a building for the user
-  const building = await prisma.building.create({
-    data: {
+  const building = await prisma.building.upsert({
+    where: { id: `${user.id}_home` },
+    update: {},
+    create: {
+      id: `${user.id}_home`,
       name: "My Home",
       address: "123 Energy Street",
       userId: user.id,
@@ -115,8 +128,10 @@ async function main() {
 
   // Create monthly limit for current month
   const now_date = new Date();
-  const limit = await prisma.monthlyLimit.create({
-    data: {
+  const limit = await prisma.monthlyLimit.upsert({
+    where: { userId_year_month: { userId: user.id, year: now_date.getFullYear(), month: now_date.getMonth() + 1 } },
+    update: {},
+    create: {
       year: now_date.getFullYear(),
       month: now_date.getMonth() + 1,
       kWhLimit: 800,
@@ -129,18 +144,16 @@ async function main() {
   console.log(`Created monthly limit: ${limit.kWhLimit} kWh`);
 
   // Award some achievements to user
-  await prisma.userAchievement.create({
-    data: {
-      userId: user.id,
-      achievementId: achievements[0].id, // First Step
-    },
+  await prisma.userAchievement.upsert({
+    where: { userId_achievementId: { userId: user.id, achievementId: achievements[0].id } },
+    update: {},
+    create: { userId: user.id, achievementId: achievements[0].id },
   });
 
-  await prisma.userAchievement.create({
-    data: {
-      userId: user.id,
-      achievementId: achievements[4].id, // Limit Setter
-    },
+  await prisma.userAchievement.upsert({
+    where: { userId_achievementId: { userId: user.id, achievementId: achievements[4].id } },
+    update: {},
+    create: { userId: user.id, achievementId: achievements[4].id },
   });
 
   console.log("Awarded achievements to user");

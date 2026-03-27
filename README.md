@@ -13,10 +13,12 @@ npm install
 Create a `.env` file in the root of the project:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/ems_dev"
 NEXTAUTH_SECRET="your-secret-here"
 NEXTAUTH_URL="http://localhost:3000"
 ```
+
+> You'll need a local PostgreSQL instance running, or swap `DATABASE_URL` for a free [Neon](https://neon.tech) connection string.
 
 ### 3. Generate the Prisma client
 
@@ -59,4 +61,21 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Deploy on Vercel
 
-The easiest way to deploy is via the [Vercel Platform](https://vercel.com/new). Make sure to set the environment variables in your Vercel project settings.
+This app uses **Neon** (free PostgreSQL) as the production database. Vercel has a built-in Neon integration that sets `DATABASE_URL` automatically.
+
+### 1. Create a Neon database via Vercel
+
+1. Go to your Vercel project → **Storage** tab
+2. Click **Create Database** → select **Neon Postgres**
+3. Follow the prompts — Vercel will auto-add `DATABASE_URL` to your environment variables
+
+### 2. Set remaining environment variables in Vercel
+
+| Variable | Value |
+|---|---|
+| `NEXTAUTH_SECRET` | a long random string (run `openssl rand -base64 32`) |
+| `NEXTAUTH_URL` | your Vercel deployment URL (e.g. `https://your-app.vercel.app`) |
+
+### 3. Deploy
+
+Push to your connected Git branch. Vercel will run `prisma generate && next build` automatically.
