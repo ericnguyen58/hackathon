@@ -1,0 +1,173 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// User model for authentication
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?   // Hashed password for credentials auth
+  image         String?
+  role          UserRole  @default(HOMEOWNER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  buildings     Building[]
+  limits        MonthlyLimit[]
+  alerts        Alert[]
+  achievements  UserAchievement[]
+  points        Int       @default(0)
+  streakDays    Int       @default(0) // Consecutive under-budget days
+
+  @@map("users")
+}
+
+enum UserRole {
+  HOMEOWNER
+  BUILDING_OPERATOR
+  ADMIN
+}
+
+// Building/Unit model for energy tracking
+model Building {
+  id            String   @id @default(cuid())
+  name          String
+  address       String?
+  unitNumber    String?
+  squareFootage Float?
+  timezone      String   @default("America/New_York")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readings      EnergyReading[]
+
+  @@index([userId])
+  @@map("buildings")
+}
+
+// Energy readings (can be manual entry or IoT device data)
+model EnergyReading {
+  id            String   @id @default(cuid())
+  timestamp     DateTime @default(now())
+  kWh           Float    // Kilowatt-hours consumed
+  cost          Float?   // Cost in local currency
+  source        String   @default("manual") // manual, smart_meter, api
+
+  // Relations
+  buildingId    String
+  building      Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+
+  @@index([buildingId])
+  @@index([timestamp])
+  @@map("energy_readings")
+}
+
+// Monthly usage/budget limits
+model MonthlyLimit {
+  id            String      @id @default(cuid())
+  year          Int
+  month         Int         // 1-12
+  kWhLimit      Float?      // Optional kWh limit
+  costLimit     Float?      // Optional cost limit
+  alertThreshold Float      @default(80) // Alert when usage exceeds this % of limit
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alerts        Alert[]
+
+  @@unique([userId, year, month])
+  @@index([userId])
+  @@map("monthly_limits")
+}
+
+// Alerts for exceeding limits
+model Alert {
+  id            String      @id @default(cuid())
+  type          AlertType
+  message       String
+  severity      AlertSeverity @default(WARNING)
+  isRead        Boolean     @default(false)
+  sentAt        DateTime    @default(now())
+
+  // Relations
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  limitId       String?
+  limit         MonthlyLimit? @relation(fields: [limitId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@map("alerts")
+}
+
+enum AlertType {
+  LIMIT_APPROACHING
+  LIMIT_EXCEEDED
+  USAGE_SPIKE
+  DAILY_SUMMARY
+  WEEKLY_SUMMARY
+  ACHIEVEMENT_EARNED
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+// Achievement/Reward definitions
+model Achievement {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  description   String
+  icon          String    // Lucide icon name
+  points        Int       @default(0)
+  requirement   String    // JSON describing requirements
+  category      AchievementCategory
+
+  // Relations
+  users         UserAchievement[]
+
+  @@map("achievements")
+}
+
+enum AchievementCategory {
+  SAVINGS
+  STREAK
+  CONSERVATION
+  MILESTONE
+  SPECIAL
+}
+
+// User's earned achievements
+model UserAchievement {
+  id            String      @id @default(cuid())
+  earnedAt      DateTime    @default(now())
+  progress      Float       @default(100) // For partial achievements
+
+  // Relations
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
