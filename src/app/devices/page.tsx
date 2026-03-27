@@ -19,12 +19,22 @@ import { KWH_RATE } from "@/lib/constants";
 const DEMO_USER_ID = "user_1";
 const DEMO_BUILDING_ID = "user_1_home";
 
+const FALLBACK_DEVICES: Device[] = [
+  { id: "dev_1", name: "Central AC",         category: "HVAC",        wattage: 3500, isOn: false, dailyHours: 6,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_2", name: "Water Heater",        category: "APPLIANCE",   wattage: 4500, isOn: true,  dailyHours: 3,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_3", name: "Refrigerator",        category: "APPLIANCE",   wattage: 150,  isOn: true,  dailyHours: 24, buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_4", name: "Washer / Dryer",      category: "APPLIANCE",   wattage: 2200, isOn: false, dailyHours: 1,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_5", name: "Living Room Lights",  category: "LIGHTING",    wattage: 120,  isOn: true,  dailyHours: 5,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_6", name: "TV + Entertainment",  category: "ELECTRONICS", wattage: 300,  isOn: false, dailyHours: 4,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_7", name: "Home Office",         category: "ELECTRONICS", wattage: 250,  isOn: true,  dailyHours: 8,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+];
+
 const CATEGORIES: DeviceCategory[] = [
   "HVAC", "APPLIANCE", "LIGHTING", "ELECTRONICS", "EV_CHARGER", "OTHER",
 ];
 
 export default function DevicesPage() {
-  const [devices, setDevices] = useState<Device[]>([]);
+  const [devices, setDevices] = useState<Device[]>(FALLBACK_DEVICES);
   const [isPending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -32,7 +42,9 @@ export default function DevicesPage() {
   });
 
   useEffect(() => {
-    getDevicesForUser(DEMO_USER_ID).then(setDevices);
+    getDevicesForUser(DEMO_USER_ID).then((d) => {
+      if (d.length > 0) setDevices(d);
+    }).catch(() => {});
   }, []);
 
   const activeCount = devices.filter((d) => d.isOn).length;
