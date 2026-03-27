@@ -176,6 +176,7 @@ model Device {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
+  turnedOnAt  DateTime?      // set when device is turned on, cleared when off
   buildingId  String
   building    Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
 

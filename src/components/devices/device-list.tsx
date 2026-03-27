@@ -10,12 +10,11 @@ const CATEGORY_ORDER: DeviceCategory[] = [
 interface DeviceListProps {
   devices: Device[];
   onToggle: (id: string, isOn: boolean) => void;
-  onUpdateHours: (id: string, hours: number) => void;
   onDelete: (id: string) => void;
   isPending: boolean;
 }
 
-export function DeviceList({ devices, onToggle, onUpdateHours, onDelete, isPending }: DeviceListProps) {
+export function DeviceList({ devices, onToggle, onDelete, isPending }: DeviceListProps) {
   const grouped = CATEGORY_ORDER.reduce((acc, cat) => {
     const items = devices.filter((d) => d.category === cat);
     if (items.length > 0) acc[cat] = items;
@@ -43,7 +42,6 @@ export function DeviceList({ devices, onToggle, onUpdateHours, onDelete, isPendi
                 key={device.id}
                 device={device}
                 onToggle={onToggle}
-                onUpdateHours={onUpdateHours}
                 onDelete={onDelete}
                 isPending={isPending}
               />

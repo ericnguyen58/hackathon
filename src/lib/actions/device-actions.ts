@@ -13,16 +13,27 @@ export async function getDevicesForUser(userId: string) {
 }
 
 export async function toggleDevice(deviceId: string, isOn: boolean) {
-  return prisma.device.update({
-    where: { id: deviceId },
-    data: { isOn, updatedAt: new Date() },
-  });
-}
+  if (isOn) {
+    return prisma.device.update({
+      where: { id: deviceId },
+      data: { isOn: true, turnedOnAt: new Date(), updatedAt: new Date() },
+    });
+  }
 
-export async function updateDeviceHours(deviceId: string, dailyHours: number) {
+  // Turning off — calculate elapsed hours and accumulate into dailyHours
+  const device = await prisma.device.findUnique({ where: { id: deviceId } });
+  const elapsed = device?.turnedOnAt
+    ? (Date.now() - device.turnedOnAt.getTime()) / 3_600_000
+    : 0;
+
   return prisma.device.update({
     where: { id: deviceId },
-    data: { dailyHours, updatedAt: new Date() },
+    data: {
+      isOn: false,
+      turnedOnAt: null,
+      dailyHours: Math.min(24, (device?.dailyHours ?? 0) + elapsed),
+      updatedAt: new Date(),
+    },
   });
 }
 
@@ -37,14 +48,17 @@ export async function deleteDevice(deviceId: string) {
   return prisma.device.delete({ where: { id: deviceId } });
 }
 
+const now = () => new Date();
+const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
+
 const FALLBACK_DEVICES = [
-  { id: "dev_1", name: "Central AC",          category: "HVAC"        as DeviceCategory, wattage: 3500, isOn: false, dailyHours: 6,  buildingId: "user_1_home", createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_2", name: "Water Heater",         category: "APPLIANCE"   as DeviceCategory, wattage: 4500, isOn: true,  dailyHours: 3,  buildingId: "user_1_home", createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_3", name: "Refrigerator",         category: "APPLIANCE"   as DeviceCategory, wattage: 150,  isOn: true,  dailyHours: 24, buildingId: "user_1_home", createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_4", name: "Washer / Dryer",       category: "APPLIANCE"   as DeviceCategory, wattage: 2200, isOn: false, dailyHours: 1,  buildingId: "user_1_home", createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_5", name: "Living Room Lights",   category: "LIGHTING"    as DeviceCategory, wattage: 120,  isOn: true,  dailyHours: 5,  buildingId: "user_1_home", createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_6", name: "TV + Entertainment",   category: "ELECTRONICS" as DeviceCategory, wattage: 300,  isOn: false, dailyHours: 4,  buildingId: "user_1_home", createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_7", name: "Home Office",          category: "ELECTRONICS" as DeviceCategory, wattage: 250,  isOn: true,  dailyHours: 8,  buildingId: "user_1_home", createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_1", name: "Central AC",         category: "HVAC"        as DeviceCategory, wattage: 3500, isOn: false, dailyHours: 6,   turnedOnAt: null,           buildingId: "user_1_home", createdAt: now(), updatedAt: now() },
+  { id: "dev_2", name: "Water Heater",        category: "APPLIANCE"   as DeviceCategory, wattage: 4500, isOn: true,  dailyHours: 2.5, turnedOnAt: hoursAgo(0.5),  buildingId: "user_1_home", createdAt: now(), updatedAt: now() },
+  { id: "dev_3", name: "Refrigerator",        category: "APPLIANCE"   as DeviceCategory, wattage: 150,  isOn: true,  dailyHours: 22,  turnedOnAt: hoursAgo(2),    buildingId: "user_1_home", createdAt: now(), updatedAt: now() },
+  { id: "dev_4", name: "Washer / Dryer",      category: "APPLIANCE"   as DeviceCategory, wattage: 2200, isOn: false, dailyHours: 1,   turnedOnAt: null,           buildingId: "user_1_home", createdAt: now(), updatedAt: now() },
+  { id: "dev_5", name: "Living Room Lights",  category: "LIGHTING"    as DeviceCategory, wattage: 120,  isOn: true,  dailyHours: 4,   turnedOnAt: hoursAgo(1),    buildingId: "user_1_home", createdAt: now(), updatedAt: now() },
+  { id: "dev_6", name: "TV + Entertainment",  category: "ELECTRONICS" as DeviceCategory, wattage: 300,  isOn: false, dailyHours: 3.5, turnedOnAt: null,           buildingId: "user_1_home", createdAt: now(), updatedAt: now() },
+  { id: "dev_7", name: "Home Office",         category: "ELECTRONICS" as DeviceCategory, wattage: 250,  isOn: true,  dailyHours: 7,   turnedOnAt: hoursAgo(1.5),  buildingId: "user_1_home", createdAt: now(), updatedAt: now() },
 ];
 
 export async function getEnergyInsights(userId: string) {

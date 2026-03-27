@@ -1,12 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Device, DeviceCategory } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Thermometer, Lightbulb, WashingMachine, Monitor, Car, Plug, Trash2,
-} from "lucide-react";
+import { Thermometer, Lightbulb, WashingMachine, Monitor, Car, Plug, Trash2 } from "lucide-react";
 
 const CATEGORY_ICON: Record<DeviceCategory, React.ReactNode> = {
   HVAC:        <Thermometer className="h-5 w-5" />,
@@ -26,19 +25,41 @@ const CATEGORY_COLOR: Record<DeviceCategory, string> = {
   OTHER:       "bg-gray-100 text-gray-800",
 };
 
+function formatElapsed(ms: number) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 interface DeviceCardProps {
   device: Device;
   onToggle: (id: string, isOn: boolean) => void;
-  onUpdateHours: (id: string, hours: number) => void;
   onDelete: (id: string) => void;
   isPending: boolean;
 }
 
-export function DeviceCard({ device, onToggle, onUpdateHours, onDelete, isPending }: DeviceCardProps) {
-  const dailyKwh = ((device.wattage / 1000) * device.dailyHours).toFixed(2);
+export function DeviceCard({ device, onToggle, onDelete, isPending }: DeviceCardProps) {
+  const [elapsedMs, setElapsedMs] = useState(
+    device.isOn && device.turnedOnAt ? Date.now() - new Date(device.turnedOnAt).getTime() : 0
+  );
+
+  useEffect(() => {
+    if (!device.isOn || !device.turnedOnAt) { setElapsedMs(0); return; }
+    const start = new Date(device.turnedOnAt).getTime();
+    setElapsedMs(Date.now() - start);
+    const interval = setInterval(() => setElapsedMs(Date.now() - start), 1000);
+    return () => clearInterval(interval);
+  }, [device.isOn, device.turnedOnAt]);
+
+  const sessionKwh = ((device.wattage / 1000) * (elapsedMs / 3_600_000)).toFixed(3);
+  const totalKwh = ((device.wattage / 1000) * device.dailyHours).toFixed(2);
 
   return (
-    <Card className={`transition-all ${device.isOn ? "border-green-400" : "border-border"}`}>
+    <Card className={`transition-all ${device.isOn ? "border-primary" : "border-border"}`}>
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
@@ -65,27 +86,27 @@ export function DeviceCard({ device, onToggle, onUpdateHours, onDelete, isPendin
             size="sm"
             disabled={isPending}
             onClick={() => onToggle(device.id, !device.isOn)}
-            className={device.isOn ? "bg-green-500 hover:bg-green-600 text-white" : ""}
+            className={device.isOn ? "bg-primary hover:bg-primary/90 text-primary-foreground" : ""}
             variant={device.isOn ? "default" : "outline"}
           >
             {device.isOn ? "On" : "Off"}
           </Button>
         </div>
 
-        <div className="flex items-center justify-between text-xs">
-          <label className="text-muted-foreground">Hrs/day</label>
-          <input
-            type="number"
-            min={0}
-            max={24}
-            step={0.5}
-            defaultValue={device.dailyHours}
-            onBlur={(e) => onUpdateHours(device.id, parseFloat(e.target.value) || 0)}
-            className="w-16 text-right border rounded px-1 py-0.5 text-xs bg-background"
-          />
-        </div>
-
-        <p className="text-xs text-muted-foreground">~{dailyKwh} kWh/day</p>
+        {device.isOn ? (
+          <div className="rounded-md bg-primary/10 px-3 py-2 space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Active for</span>
+              <span className="font-semibold tabular-nums">{formatElapsed(elapsedMs)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Session usage</span>
+              <span className="font-semibold">{sessionKwh} kWh</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Today: {totalKwh} kWh accumulated</p>
+        )}
       </CardContent>
     </Card>
   );

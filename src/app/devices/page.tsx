@@ -9,7 +9,6 @@ import { DeviceList } from "@/components/devices/device-list";
 import {
   getDevicesForUser,
   toggleDevice,
-  updateDeviceHours,
   createDevice,
   deleteDevice,
 } from "@/lib/actions/device-actions";
@@ -19,14 +18,15 @@ import { KWH_RATE } from "@/lib/constants";
 const DEMO_USER_ID = "user_1";
 const DEMO_BUILDING_ID = "user_1_home";
 
+const h = (n: number) => new Date(Date.now() - n * 3_600_000);
 const FALLBACK_DEVICES: Device[] = [
-  { id: "dev_1", name: "Central AC",         category: "HVAC",        wattage: 3500, isOn: false, dailyHours: 6,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_2", name: "Water Heater",        category: "APPLIANCE",   wattage: 4500, isOn: true,  dailyHours: 3,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_3", name: "Refrigerator",        category: "APPLIANCE",   wattage: 150,  isOn: true,  dailyHours: 24, buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_4", name: "Washer / Dryer",      category: "APPLIANCE",   wattage: 2200, isOn: false, dailyHours: 1,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_5", name: "Living Room Lights",  category: "LIGHTING",    wattage: 120,  isOn: true,  dailyHours: 5,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_6", name: "TV + Entertainment",  category: "ELECTRONICS", wattage: 300,  isOn: false, dailyHours: 4,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
-  { id: "dev_7", name: "Home Office",         category: "ELECTRONICS", wattage: 250,  isOn: true,  dailyHours: 8,  buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_1", name: "Central AC",         category: "HVAC",        wattage: 3500, isOn: false, dailyHours: 6,   turnedOnAt: null,   buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_2", name: "Water Heater",        category: "APPLIANCE",   wattage: 4500, isOn: true,  dailyHours: 2.5, turnedOnAt: h(0.5), buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_3", name: "Refrigerator",        category: "APPLIANCE",   wattage: 150,  isOn: true,  dailyHours: 22,  turnedOnAt: h(2),   buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_4", name: "Washer / Dryer",      category: "APPLIANCE",   wattage: 2200, isOn: false, dailyHours: 1,   turnedOnAt: null,   buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_5", name: "Living Room Lights",  category: "LIGHTING",    wattage: 120,  isOn: true,  dailyHours: 4,   turnedOnAt: h(1),   buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_6", name: "TV + Entertainment",  category: "ELECTRONICS", wattage: 300,  isOn: false, dailyHours: 3.5, turnedOnAt: null,   buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
+  { id: "dev_7", name: "Home Office",         category: "ELECTRONICS", wattage: 250,  isOn: true,  dailyHours: 7,   turnedOnAt: h(1.5), buildingId: DEMO_BUILDING_ID, createdAt: new Date(), updatedAt: new Date() },
 ];
 
 const CATEGORIES: DeviceCategory[] = [
@@ -52,13 +52,10 @@ export default function DevicesPage() {
   const dailyCost = devices.reduce((s, d) => s + (d.wattage / 1000) * d.dailyHours * KWH_RATE, 0);
 
   function handleToggle(id: string, isOn: boolean) {
-    setDevices((prev) => prev.map((d) => (d.id === id ? { ...d, isOn } : d)));
+    setDevices((prev) => prev.map((d) =>
+      d.id === id ? { ...d, isOn, turnedOnAt: isOn ? new Date() : null } : d
+    ));
     startTransition(async () => { await toggleDevice(id, isOn).catch(() => {}); });
-  }
-
-  function handleUpdateHours(id: string, dailyHours: number) {
-    setDevices((prev) => prev.map((d) => (d.id === id ? { ...d, dailyHours } : d)));
-    startTransition(async () => { await updateDeviceHours(id, dailyHours).catch(() => {}); });
   }
 
   function handleDelete(id: string) {
@@ -135,7 +132,6 @@ export default function DevicesPage() {
         <DeviceList
           devices={devices}
           onToggle={handleToggle}
-          onUpdateHours={handleUpdateHours}
           onDelete={handleDelete}
           isPending={isPending}
         />
